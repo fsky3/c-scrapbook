@@ -9,47 +9,55 @@ SEC_TO_MS = 1000
 PROGRAM_PATH = "./mysort"
 DATA_PATH = "./data.txt"
 
-ALGORITHMS = ((0, 'bq', "bubblesort"),
-              (1, 'iq', "insertionsort"),
-              (2, 'sq', "selectionsort"),
-              (3, 'hq', "heapsort"),
-              (4, 'mq', "mergesort"),
-              (5, 'qq', "quicksort"),
+ALGORITHMS = (('bq', "bubblesort"),
+              ('iq', "insertionsort"),
+              ('sq', "selectionsort"),
+              ('hq', "heapsort"),
+              ('mq', "mergesort"),
+              ('qq', "quicksort"),
               )
 
-ALG_SAMP_IDX = 0
-ALG_FLAG_IDX = 1
-ALG_NAME_IDX = 2
+ALG_FLAG_IDX = 0
+ALG_NAME_IDX = 1
 
-# each row is adjusted for the respective algorithm above
-SAMPLES = [list(range(0, 20001, 2000)), # bubble
-           list(range(0, 27501, 2500)), #insertion
-           list(range(0, 36001, 4000)), # selection
-           list(range(0, 1000001, 100000)), # merge
-           list(range(0, 1000001, 100000)), # quick
-           list(range(0, 1000001, 100000)), # heap
+# optimal starting value and ranges below might vary between machines
+X_START = 2000
+
+# rows are adjusted for respective algorithms above to be comparable on the graph
+SAMPLES = [list(range(X_START, 18001, 2000)), # bubble
+           list(range(X_START, 26501, 2500)), # insertion
+           list(range(X_START, 31001, 4000)), # selection
+           list(range(X_START, 1000001, 100000)), # merge
+           list(range(X_START, 1000001, 100000)), # quick
+           list(range(X_START, 1000001, 100000)), # heap
           ]
 
-# Print start time
+# print start time
 print("Start: " + str(datetime.datetime.now()))
 
-for alg in ALGORITHMS:
+# the benchmark loop
+for i, alg in enumerate(ALGORITHMS):
 	tmp_algorithm_results = []
-	for n in SAMPLES[alg[ALG_SAMP_IDX]]:
-		cmd = "head -n {} {} | /usr/bin/time -f %e {} {}".format(n, DATA_PATH, PROGRAM_PATH, alg[ALG_FLAG_IDX])
-		print("Running {} for N = {}...".format(alg[ALG_NAME_IDX], n))
+	for j, n in enumerate(SAMPLES[i], start = 1):
+		cmd = f"head -n {n} {DATA_PATH} | /usr/bin/time -f %e {PROGRAM_PATH} {alg[ALG_FLAG_IDX]}"
+		print(f"* Running {alg[ALG_NAME_IDX]} for n = {n}... [{j}/{len(SAMPLES[i])}]")
+		if j == 1: # don't spam too much
+			print(f"  {cmd}")
 		ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		_, stderr = ps.communicate() # usr/bin/time prints results on stderr
 		tmp_algorithm_results.append(float(stderr) * SEC_TO_MS)
-	pyplot.plot(SAMPLES[alg[ALG_SAMP_IDX]], tmp_algorithm_results)
+	pyplot.plot(SAMPLES[i], tmp_algorithm_results)
 
-# Print end time
+# print end time
 print("End: " + str(datetime.datetime.now()))
 
-pyplot.title("Time complexity of sorting algorithms")
+# decorate plot
+pyplot.title("Comparison of sorting algorithms")
 pyplot.ylabel("Time [ms]")
+pyplot.legend([i[ALG_NAME_IDX] for i in ALGORITHMS], loc="upper right")
 pyplot.xlabel("Items to sort [lines of text]")
 pyplot.xscale("log")
-pyplot.legend([i[2] for i in ALGORITHMS], loc="upper right")
 pyplot.grid(True)
+
+# done
 pyplot.show()
